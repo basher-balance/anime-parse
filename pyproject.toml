@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "test_websockets_currency"
+version = "0.1.0"
+description = ""
+authors = ["basher-balance <b_438@mail.ru>"]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+requests = "^2.27.1"
+finnhub-python = "^2.4.13"
+httpx = "^0.22.0"
+beautifulsoup4 = "^4.11.1"
+lxml = "^4.8.0"
+
+[tool.poetry.dev-dependencies]
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
