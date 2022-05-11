@@ -34,7 +34,6 @@ async def get_anime(client, url):
 async def main():
 
     async with httpx.AsyncClient() as client:
-        anime_list_parse_html = []
         tasks = []
         for number in range(1, pages):
             url = f'{link}?page{number}'
@@ -42,11 +41,22 @@ async def main():
 
         animes = await asyncio.gather(*tasks)
         return animes
-#        # Митиситу кажется что тут можно забабахать async for
-#        for anime in animes:
-#            anime_list_parse_html.append(anime)
-#        return anime_list_parse_html
 
+
+async def get_an(client, url):
+        response = await client.get(url)
+        return response.text
+
+
+async def foo():
+
+    async with httpx.AsyncClient() as client:
+        tas = []
+        for ur in link_to_anime_list:
+            tas.append(asyncio.ensure_future(get_an(client, ur)))
+
+        videoid = await asyncio.gather(*tas)
+        return videoid
 
 link_to_anime_list = []
 # Объединяю спаршеные страницы в одну
@@ -67,6 +77,10 @@ for tag_h2 in tag_h2_list:
             print(f'Ссылка на страницу с выбором озвучки:\n\t{link_to_anime}')
             link_to_anime_list.append(link_to_anime)
 
+print("ДО")
+ket = ''.join(asyncio.run(foo()))
+print(ket)
+print("ПОСЛЕ")
  #           print(f'{tag_h2}\n')
 #print(tag_h2)
 
