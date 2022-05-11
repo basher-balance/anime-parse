@@ -43,17 +43,13 @@ async def main():
         return animes
 
 
-async def get_an(client, url):
-        response = await client.get(url)
-        return response.text
-
-
 async def foo():
 
     async with httpx.AsyncClient() as client:
         tas = []
         for ur in link_to_anime_list:
-            tas.append(asyncio.ensure_future(get_an(client, ur)))
+            ur = ur.replace('su//','su/')
+            tas.append(asyncio.ensure_future(get_anime(client, ur)))
 
         videoid = await asyncio.gather(*tas)
         return videoid
@@ -77,10 +73,14 @@ for tag_h2 in tag_h2_list:
             print(f'Ссылка на страницу с выбором озвучки:\n\t{link_to_anime}')
             link_to_anime_list.append(link_to_anime)
 
-print("ДО")
+
 ket = ''.join(asyncio.run(foo()))
-print(ket)
-print("ПОСЛЕ")
+soup_soup = BeautifulSoup(ket, "lxml")
+# Ищу все теги h2
+tag_h2_list_pp = soup.find_all('a')
+for kj in tag_h2_list_pp:
+    print(kj.find(id='ep6'))
+
  #           print(f'{tag_h2}\n')
 #print(tag_h2)
 
