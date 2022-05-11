@@ -1,6 +1,5 @@
 import requests
 import re
-
 from bs4 import BeautifulSoup
 
 
@@ -20,7 +19,7 @@ list_anime = [
 ]
 
 link = "https://naruto-base.su/novosti/drugoe_anime_ru"
-url_base = "https://naruto-base.su/"
+url_base = "https://naruto-base.su"
 # Количество страниц, которое будет просматривать код
 pages = 3
 
@@ -28,8 +27,8 @@ pages = 3
 
 async def get_anime(client, url):
         response = await client.get(url)
-        return response.text
-
+        print(url)
+        return response.content
 
 async def main():
 
@@ -37,15 +36,10 @@ async def main():
         tasks = []
         for number in range(1, pages):
             url = f'{link}?page{number}'
-            tasks.append(asyncio.ensure_future(get_anime(client, url)))
+            tasks.append(asyncio.create_task(get_anime(client, url)))
 
         animes = await asyncio.gather(*tasks)
         return animes
-
-
-async def get_an(client, url):
-        response = await client.get(url)
-        return response.text
 
 
 async def foo():
@@ -53,14 +47,14 @@ async def foo():
     async with httpx.AsyncClient() as client:
         tas = []
         for ur in link_to_anime_list:
-            tas.append(asyncio.ensure_future(get_an(client, ur)))
+            tas.append(asyncio.create_task(get_anime(client, ur)))
 
         videoid = await asyncio.gather(*tas)
         return videoid
 
 link_to_anime_list = []
 # Объединяю спаршеные страницы в одну
-site = ''.join(asyncio.run(main()))
+site = b''.join(asyncio.run(main()))
 # Перевожу в объект для парсинга
 soup = BeautifulSoup(site, "lxml")
 # Ищу все теги h2
@@ -77,10 +71,32 @@ for tag_h2 in tag_h2_list:
             print(f'Ссылка на страницу с выбором озвучки:\n\t{link_to_anime}')
             link_to_anime_list.append(link_to_anime)
 
-print("ДО")
-ket = ''.join(asyncio.run(foo()))
-print(ket)
-print("ПОСЛЕ")
+print('\n\n')
+
+ket = b''.join(asyncio.run(foo()))
+soup = BeautifulSoup(ket,'lxml')
+
+favorite_voice = 'Sibnet '
+favorite_voice = favorite_voice.lower().split()
+
+favorite_actor = 'Sibnet '
+favorite_actor = favorite_actor.lower().split()
+
+result = {
+    'voice':[],
+    'sub':  []
+}
+for voice_sub in soup.find_all('a',id=True,onclick=True):
+    string = voice_sub.string.lower()
+    if any(j in string for j in favorite_voice):
+        voice_key = voice_sub['onclick'].split('\'')[1]
+        print(voice_key)
+        result['voice'] = voice_key
+    elif any(j in string for j in favorite_actor):
+        sub_key = voice_sub['onclick'].split('\'')[1]
+        print(sub_key)
+        result['sub'] = sub_key
+
  #           print(f'{tag_h2}\n')
 #print(tag_h2)
 
