@@ -41,17 +41,34 @@ async def main():
             tasks.append(asyncio.ensure_future(get_anime(client, url)))
 
         animes = await asyncio.gather(*tasks)
-        # Митиситу кажется что тут можно забабахать async for
-        for anime in animes:
-            anime_list_parse_html.append(anime)
-        return anime_list_parse_html
-    
+        return animes
+#        # Митиситу кажется что тут можно забабахать async for
+#        for anime in animes:
+#            anime_list_parse_html.append(anime)
+#        return anime_list_parse_html
 
+
+link_to_anime_list = []
+# Объединяю спаршеные страницы в одну
 site = ''.join(asyncio.run(main()))
+# Перевожу в объект для парсинга
 soup = BeautifulSoup(site, "lxml")
-tag_h2 = soup.find_all('h2')
+# Ищу все теги h2
+tag_h2_list = soup.find_all('h2')
+# Перебираю теги
+for tag_h2 in tag_h2_list:
+    # Перебираю аниме из списка аниме
+    for title in list_anime:
+        # Ищу аниме в перебираемых тегах
+        if title in tag_h2.get_text():
+            print(f'Печатаю то, что будет записываться в "title_anime":\n\t{tag_h2.get_text()}')
+            # Если аниме присутствует в название вывожу часть ссылки на страницу с аниме
+            link_to_anime = f'{url_base}{tag_h2.find("a").get("href")}'
+            print(f'Ссылка на страницу с выбором озвучки:\n\t{link_to_anime}')
+            link_to_anime_list.append(link_to_anime)
 
-print(tag_h2)
+ #           print(f'{tag_h2}\n')
+#print(tag_h2)
 
 #for ak in site:
 #    k = BeautifulSoup(ak, "lxml")
