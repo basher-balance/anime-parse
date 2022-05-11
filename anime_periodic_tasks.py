@@ -23,15 +23,47 @@ url_base = "https://naruto-base.su"
 # Количество страниц, которое будет просматривать код
 pages = 3
 
+favorite_voice = 'Sibnet '
+favorite_voice = favorite_voice.lower().split()
+
+favorite_actor = 'Sibnet '
+favorite_actor = favorite_actor.lower().split()
+
+result = dict()
 
 
 async def get_anime(client, url):
         response = await client.get(url)
-        print(url)
         return response.content
 
-async def main():
+async def get_sub_voice(client,url):
+        soup = BeautifulSoup(await get_anime(client,url),'lxml')
+        name_anime = soup.find('h1',attrs={'itemprop':'name'}).string
+         # получаем название аниме
+        for i in range(len(name_anime)):                              # вытягиваем позицию с которого налась цифра,для того чтобы вытащить имя аниме и эпизод
+            if name_anime[i].isnumeric():
+                name_anime,episode = name_anime[:i],name_anime[i:]
+                break                                                 # дальше нету смысла искать
+        
+        for voice_sub in soup.find_all('a',id=True,onclick=True):     # ищем элемент с озвучкой и субтитрами
+            string_voice_sub = voice_sub.string                       # вытаскиваем студию для для проверки на любимчиков
+            who = string_voice_sub.replace('[','').replace(']','').split()[-1] # студия
+            
+            if not (any(j in string_voice_sub.lower() for j in favorite_voice) or \
+                    any(j in string_voice_sub.lower() for j in favorite_actor)):  # проверка, если не нашли любимчиков скипаем
+                continue
+            
+            global_key = voice_sub['onclick'].split('\'')[1]
+            result[global_key] = {
+                'name':     name_anime,
+                'type':     ('voice','sub')[string_voice_sub.find('озвуч') < 1],
+                'who':      who,
+                'episode':  episode
+            }
+            
 
+
+async def main():
     async with httpx.AsyncClient() as client:
         tasks = []
         for number in range(1, pages):
@@ -47,7 +79,7 @@ async def foo():
     async with httpx.AsyncClient() as client:
         tas = []
         for ur in link_to_anime_list:
-            tas.append(asyncio.create_task(get_anime(client, ur)))
+            tas.append(asyncio.create_task(get_sub_voice(client, ur)))
 
         videoid = await asyncio.gather(*tas)
         return videoid
@@ -73,29 +105,11 @@ for tag_h2 in tag_h2_list:
 
 print('\n\n')
 
-ket = b''.join(asyncio.run(foo()))
-soup = BeautifulSoup(ket,'lxml')
 
-favorite_voice = 'Sibnet '
-favorite_voice = favorite_voice.lower().split()
-
-favorite_actor = 'Sibnet '
-favorite_actor = favorite_actor.lower().split()
-
-result = {
-    'voice':[],
-    'sub':  []
-}
-for voice_sub in soup.find_all('a',id=True,onclick=True):
-    string = voice_sub.string.lower()
-    if any(j in string for j in favorite_voice):
-        voice_key = voice_sub['onclick'].split('\'')[1]
-        print(voice_key)
-        result['voice'] = voice_key
-    elif any(j in string for j in favorite_actor):
-        sub_key = voice_sub['onclick'].split('\'')[1]
-        print(sub_key)
-        result['sub'] = sub_key
+#ket = b''.join(asyncio.run(foo())) если доработать,мб будет работать 
+asyncio.run(foo())
+for i in result:
+    print('{: <50}|{: ^25}|{: ^25}|{: >25}'.format(*result[i].values()))
 
  #           print(f'{tag_h2}\n')
 #print(tag_h2)
