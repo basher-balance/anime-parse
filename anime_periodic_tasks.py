@@ -26,7 +26,7 @@ pages = 3
 favorite_voice = 'Sibnet '
 favorite_voice = favorite_voice.lower().split()
 
-favorite_actor = 'Sibnet '
+favorite_actor = 'Sibnet ' #
 favorite_actor = favorite_actor.lower().split()
 
 result = dict()
@@ -37,7 +37,8 @@ async def get_anime(client, url):
         return response.content
 
 async def get_sub_voice(client,url):
-        soup = BeautifulSoup(await get_anime(client,url),'lxml')
+        sitemap = await get_anime(client,url)
+        soup = BeautifulSoup(sitemap,'lxml')
         name_anime = soup.find('h1',attrs={'itemprop':'name'}).string
          # получаем название аниме
         for i in range(len(name_anime)):                              # вытягиваем позицию с которого налась цифра,для того чтобы вытащить имя аниме и эпизод
@@ -68,7 +69,7 @@ async def main():
         tasks = []
         for number in range(1, pages):
             url = f'{link}?page{number}'
-            tasks.append(asyncio.create_task(get_anime(client, url)))
+            tasks.append(get_anime(client, url))
 
         animes = await asyncio.gather(*tasks)
         return animes
@@ -79,7 +80,7 @@ async def foo():
     async with httpx.AsyncClient() as client:
         tas = []
         for ur in link_to_anime_list:
-            tas.append(asyncio.create_task(get_sub_voice(client, ur)))
+            tas.append(get_sub_voice(client, ur))
 
         videoid = await asyncio.gather(*tas)
         return videoid
