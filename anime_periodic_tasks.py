@@ -21,12 +21,12 @@ favorite_anime = [
 link = "https://naruto-base.su/novosti/drugoe_anime_ru"
 url_base = "https://naruto-base.su"
 # Количество страниц, которое будет просматривать код
-pages = 5
+pages = 20
 
 favorite_voice = 'Sibnet '
 favorite_voice = favorite_voice.lower().split()
 
-favorite_actor = 'Sibnet ' #
+favorite_actor = 'Sibnet '
 favorite_actor = favorite_actor.lower().split()
 
 result = dict()
@@ -62,14 +62,30 @@ async def get_sub_voice(client,url):
                 'episode':  episode
             }
             
+async def filter(sitemap,client):
+    soup    = BeautifulSoup(sitemap,'lxml')
+    animes  = soup.find_all('h2')
+    await asyncio.sleep(0)
+    for anime in animes:
+        for title in favorite_anime:
+            if title in anime.get_text():
+                link_to_anime = f'{url_base}{anime.find("a").get("href")}' 
+                await get_sub_voice(client,link_to_anime)
 
+
+async def main_two():
+    async with httpx.AsyncClient() as client:
+        tasks    = (get_anime(client,f'{link}?page{number}') for number in range(1,pages))
+        sitemaps = await asyncio.gather(*tasks)
+        sitemaps = (filter(i,client) for i in sitemaps)
+        await asyncio.gather(*sitemaps)
 
 async def main():
     async with httpx.AsyncClient() as client:
         tasks = []
         for number in range(1, pages):
             url = f'{link}?page{number}'
-            tasks.append(get_anime(client, url))
+            tasks.append(get_anime(client,url))
 
         #animes = await asyncio.gather(*tasks)
         for task in asyncio.as_completed(tasks):
@@ -116,9 +132,9 @@ async def main():
 
 
 #ket = b''.join(asyncio.run(foo())) если доработать,мб будет работать 
-asyncio.run(main())
+asyncio.run(main_two())
 for i in result:
-    print('{: <50}|{: ^25}|{: ^25}|{: ^25}|{: >25}'.format(*result[i].values(),i))
+    print('{: <50}|{: ^25}|{: ^25}|{: ^25}|{: >25}|'.format(*result[i].values(),i))
 
  #           print(f'{tag_h2}\n')
 #print(tag_h2)
