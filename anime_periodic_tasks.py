@@ -1,10 +1,7 @@
-import requests
-import re
-from bs4 import BeautifulSoup
-
-
 import asyncio
 import httpx
+from bs4 import BeautifulSoup
+
 
 
 favorite_anime = [
@@ -21,20 +18,12 @@ favorite_anime = [
 link = "https://naruto-base.su/novosti/drugoe_anime_ru"
 url_base = "https://naruto-base.su"
 # Количество страниц, которое будет просматривать код
-pages = 20
-
-favorite_voice = 'Sibnet '
-favorite_voice = favorite_voice.lower().split()
-
-favorite_actor = 'Sibnet '
-favorite_actor = favorite_actor.lower().split()
-
+pages = 8
 result = dict()
-
 
 async def get_anime(client, url):
         response = await client.get(url)
-        return response.content
+        return response.text
 
 async def get_sub_voice(client,url):
         sitemap = await get_anime(client,url)
@@ -48,24 +37,35 @@ async def get_sub_voice(client,url):
         
         for voice_sub in soup.find_all('a',id=True,onclick=True):     # ищем элемент с озвучкой и субтитрами
             string_voice_sub = voice_sub.string                       # вытаскиваем студию для для проверки на любимчиков
-            who = string_voice_sub.replace('[','').replace(']','').split()[-1] # студия
-            
-            if not (any(j in string_voice_sub.lower() for j in favorite_voice) or \
-                    any(j in string_voice_sub.lower() for j in favorite_actor)):  # проверка, если не нашли любимчиков скипаем
-                continue
-            
-            global_key = voice_sub['onclick'].split('\'')[1]
-            result[global_key] = {
-                'name':     name_anime,
-                'type':     ('voice','sub')[string_voice_sub.find('озвуч') < 1],
-                'who':      who,
-                'episode':  episode
-            }
+            if 'sibnet' in string_voice_sub.lower():
+                global_key = voice_sub['onclick'].split('\'')[1]
+                type_anime = ('voice','sub')[string_voice_sub.find('озвуч') < 1]
+                named_key  = f'{name_anime}_{type_anime}'
+                if named_key in result:     #   Проверка что больше то и самое новое
+                    number_one = episode.replace('серия','').replace('сезон','').replace(' ','')
+                    number_one = int(number_one)
+
+                    number_two = result[named_key]['episode'].replace('серия','').replace('сезон','').replace(' ','')
+                    number_two = int(number_two)
+
+                    if number_one > number_two:
+                        result[named_key] = {
+                            'name':     name_anime,
+                            'type':     type_anime,
+                            'episode':  episode,
+                            'url':      f'https://video.sibnet.ru/shell.php?videoid={global_key}'
+                        }
+                else:
+                    result[named_key] = {
+                        'name':     name_anime,
+                        'type':     type_anime,
+                        'episode':  episode,
+                        'url':      f'https://video.sibnet.ru/shell.php?videoid={global_key}'
+                    }
             
 async def filter(sitemap,client):
     soup    = BeautifulSoup(sitemap,'lxml')
     animes  = soup.find_all('h2')
-    await asyncio.sleep(0)
     for anime in animes:
         for title in favorite_anime:
             if title in anime.get_text():
@@ -80,23 +80,41 @@ async def main_two():
         sitemaps = (filter(i,client) for i in sitemaps)
         await asyncio.gather(*sitemaps)
 
-async def main():
-    async with httpx.AsyncClient() as client:
-        tasks = []
-        for number in range(1, pages):
-            url = f'{link}?page{number}'
-            tasks.append(get_anime(client,url))
+asyncio.run(main_two())
 
-        #animes = await asyncio.gather(*tasks)
-        for task in asyncio.as_completed(tasks):
-            sitemap = await task
-            soup    = BeautifulSoup(sitemap,'lxml')
-            animes  = soup.find_all('h2')
-            for anime in animes:
-                for title in favorite_anime:
-                    if title in anime.get_text():
-                        link_to_anime = f'{url_base}{anime.find("a").get("href")}'
-                        await get_sub_voice(client,link_to_anime)
+
+# for i in result:
+#     if i['name'] in finally_result:
+#         number_one = i['episode'].replace('серия','').replace('сезон','').replace(' ','')
+#         number_one = int(number_one)
+
+#         number_two = finally_result[i]['episode'].replace('серия','').replace('сезон','').replace(' ','')
+#         number_two = int(number_two)
+
+#         if number_one > number_two:
+#             finally_result[i['name']] = result[i]
+
+for i in result:
+    print('{: <50}|{: ^25}|{: ^25}|{: >25}|'.format(*result[i].values()))
+
+
+# async def main():
+#     async with httpx.AsyncClient() as client:
+#         tasks = []
+#         for number in range(1, pages):
+#             url = f'{link}?page{number}'
+#             tasks.append(get_anime(client,url))
+
+#         #animes = await asyncio.gather(*tasks)
+#         for task in asyncio.as_completed(tasks):
+#             sitemap = await task
+#             soup    = BeautifulSoup(sitemap,'lxml')
+#             animes  = soup.find_all('h2')
+#             for anime in animes:
+#                 for title in favorite_anime:
+#                     if title in anime.get_text():
+#                         link_to_anime = f'{url_base}{anime.find("a").get("href")}'
+#                         await get_sub_voice(client,link_to_anime)
 
 
 # async def foo():
@@ -132,9 +150,9 @@ async def main():
 
 
 #ket = b''.join(asyncio.run(foo())) если доработать,мб будет работать 
-asyncio.run(main_two())
-for i in result:
-    print('{: <50}|{: ^25}|{: ^25}|{: ^25}|{: >25}|'.format(*result[i].values(),i))
+# asyncio.run(main_two())
+# for i in result:
+#     print('{: <50}|{: ^25}|{: ^25}|{: ^25}|{: >25}|'.format(*result[i].values(),i))
 
  #           print(f'{tag_h2}\n')
 #print(tag_h2)
